@@ -1,4 +1,4 @@
-# Mediciones y límites de la comparación
+# Método y resultados
 
 ## Sesión MobileNet-SSD CPU / NCS1
 
@@ -11,7 +11,7 @@ Fuente: [mobilenet-live.json](../results/mobilenet-live.json), guardada el 30 de
 
 La latencia mide solo `infer()`. La tasa real también está condicionada por captura, resize, dibujo, planificación, colas y recepción de resultados. Por eso no equivale a `1000 / ms`. La CPU está cerca del límite de 15 fps de la cámara; no es una medida de su máximo rendimiento sin captura.
 
-No hay serie temporal cruda guardada para esta sesión; se publica una gráfica de los agregados disponibles. No se inventan curvas retrospectivas, intervalos de confianza ni percentiles para estos valores. La gráfica del visor sí recoge muestras durante su propia ejecución. No hubo errores de inferencia. La escena guardada estaba vacía y no permite evaluar detección de personas sentadas.
+De esta sesión conservamos los promedios finales, por lo que la gráfica del repositorio muestra esos valores. La curva temporal se genera en el visor mientras está funcionando. Ambos dispositivos ejecutaron sin errores; la escena estaba vacía, así que esta prueba solo sirve para comparar rendimiento.
 
 ## Benchmark estático retail-0013, OpenVINO 2020.3.2
 
@@ -22,7 +22,7 @@ Fuentes: [CPU](../results/retail-static-CPU.json), [MYRIAD](../results/retail-st
 | CPU | 28.9878 | 29.1355 |
 | NCS1 / MYRIAD | 156.5033 | 157.5699 |
 
-Los JSON originales de esta prueba conservan agregados, no las 20 duraciones individuales. El marcador p95 es un percentil reportado, no una barra de error ni intervalo de confianza. No hubo detecciones por encima de 0.5 en la escena original sentada/parcial.
+Los JSON de esta prueba conservan mediana y p95. En la gráfica, el rombo marca el p95. El detector no encontró personas por encima del umbral 0.5 en la escena con una persona sentada y parcialmente fuera de cuadro.
 
 ## Cuatro modelos CPU, OpenVINO 2022.3.2
 
@@ -37,15 +37,15 @@ Fuente: [CSV](../results/openvino2022-cpu.csv) y JSON `*-CPU.json` con las 64 du
 | person-detection-0202 | 33.09 | 33.77 | 8 |
 | person-detection-retail-0013 | 28.44 | 29.60 | 0 |
 
-La columna de detecciones no es exactitud ni recall: no existe verdad de referencia etiquetada, ni se verificaron falsos positivos o falsos negativos sistemáticamente. No se grafica como calidad. La escena contenía una persona sentada y parcialmente fuera de cuadro.
+La última columna cuenta las imágenes en las que el modelo produjo una detección. Como no etiquetamos la escena ni revisamos sistemáticamente los falsos positivos y negativos, ese conteo no permite calcular precisión o recall. La persona estaba sentada y parcialmente fuera de cuadro.
 
 `pipeline_*` en los archivos incluye resize, inferencia y filtrado de cajas, pero excluye captura, decodificación, visualización y escritura. `serial_pipeline_fps` es una tasa calculada para ese bucle, no FPS de la cámara. Estos ensayos no incluyen ejecución NCS2.
 
-## Lo que puede concluirse
+## Interpretación
 
-La CPU mostró menor latencia que NCS1 en las dos comparaciones con el mismo modelo dentro de cada ensayo. No se ha medido ahorro energético, precisión estadística, rendimiento en otros equipos, concurrencia con cargas externas ni una mejora causal al cambiar retail por MobileNet. Los runtimes, modelos, hilos y métodos de los distintos ensayos no son equivalentes.
+La CPU fue más rápida que el NCS1 en ambos ensayos. La comparación es válida entre dispositivos dentro de cada prueba; entre pruebas cambian el modelo, la configuración de hilos y el método. Para evaluar consumo energético, calidad de detección o rendimiento en otros equipos necesitamos mediciones adicionales.
 
-## Repetir y extender la práctica
+## Cómo repetir las mediciones
 
 1. Usar el mismo modelo, precisión y datos para CPU y MYRIAD; comprobar selección explícita de dispositivo.
 2. Registrar equipo, kernel, versiones, cámara, resolución, configuración de hilos, calentamiento e iteraciones.
@@ -53,4 +53,4 @@ La CPU mostró menor latencia que NCS1 en las dos comparaciones con el mismo mod
 4. Para evaluar detección, obtener escenas etiquetadas con personas sentadas, de pie y ocluidas. Medir calidad aparte de velocidad.
 5. Si se estudia consumo, incorporar una medición eléctrica y energía por inferencia; no inferirla a partir de latencia.
 
-El benchmark público `ncs1/work/benchmark.py` permite aportar una imagen propia y guardar duraciones individuales. Las capturas originales no se distribuyen. La reconstrucción de los scripts de preparación se revisó con comprobaciones estáticas; la ejecución física documentada corresponde al laboratorio original, no a una segunda instalación limpia desde este repositorio.
+Con `ncs1/work/benchmark.py` puedes usar una imagen propia y guardar el tiempo de cada inferencia. Los resultados de este repositorio corresponden a las pruebas realizadas en la NUC. Revisamos la sintaxis de los scripts de instalación, pero todavía falta repetir todo el proceso en una segunda instalación limpia.

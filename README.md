@@ -1,8 +1,8 @@
 # Intel NCS Legacy Lab
 
-Guía en español para reutilizar **Intel Movidius Neural Compute Stick (NCS1)** y documentar las pruebas con **Intel Neural Compute Stick 2 (NCS2)** en una Intel NUC con Ubuntu 24.04. El objetivo es didáctico: preparar un entorno de inferencia, identificar qué ejecuta cada dispositivo y comparar CPU y acelerador con mediciones verificables.
+Este proyecto reúne la configuración y las pruebas de **Intel Movidius Neural Compute Stick (NCS1)** y **Intel Neural Compute Stick 2 (NCS2)** en una Intel NUC con Ubuntu 24.04. Lo estamos preparando para las clases de sistemas ciberfísicos: instalar el entorno, ejecutar modelos en CPU y VPU, y comparar su rendimiento.
 
-**Estado documentado: 30 de septiembre de 2026.** NCS1 ejecuta inferencia con OpenVINO 2020.3.2 en un contenedor Ubuntu 18.04. NCS2 aparece por USB y el plugin MYRIAD está disponible en OpenVINO 2022.3.2, pero la carga del firmware falla en este equipo. En las pruebas disponibles la CPU es más rápida que el NCS1.
+**Estado al 30 de septiembre de 2026.** NCS1 ejecuta inferencia con OpenVINO 2020.3.2 en un contenedor Ubuntu 18.04. NCS2 aparece por USB y el plugin MYRIAD está disponible en OpenVINO 2022.3.2, pero la carga del firmware falla en este equipo. Hasta ahora, la CPU ha sido más rápida que el NCS1.
 
 ## Equipo y versiones
 
@@ -18,17 +18,15 @@ Guía en español para reutilizar **Intel Movidius Neural Compute Stick (NCS1)**
 | Entorno NCS1 | Ubuntu 18.04, Python 3.6, OpenVINO 2020.3.2 |
 | Entorno NCS2 | Ubuntu 20.04, Python 3.8, OpenVINO 2022.3.2 |
 
-La identificación inicial propuesta era NUC5i7RYB; la inspección DMI de la máquina utilizada confirmó NUC7i3BNK / NUC7i3BNB. No se afirma que todas las NUC usadas en OP3 tengan esta configuración. Para verificar otro equipo: `cat /sys/class/dmi/id/product_name /sys/class/dmi/id/board_name`, `lscpu` y `uname -r`.
+Inicialmente identificamos la NUC como NUC5i7RYB, pero al consultar los datos DMI encontramos NUC7i3BNK / NUC7i3BNB. Conviene revisar el modelo de cada equipo antes de preparar el entorno: `cat /sys/class/dmi/id/product_name /sys/class/dmi/id/board_name`, `lscpu` y `uname -r`.
 
 ## Por qué usar contenedores
 
-Un `venv` aísla paquetes Python, pero no sustituye las bibliotecas nativas, el plugin MYRIAD, el firmware ni los permisos USB. Se conservaron Ubuntu 24.04 y Python del anfitrión, y se instalaron versiones antiguas dentro de contenedores separados. El contenedor sigue usando el kernel y la conexión USB del anfitrión: no equivale a arrancar físicamente Ubuntu 18.04 o 20.04.
-
-Aquí hablamos de **reutilización de hardware legado** y de un entorno compatible con versiones anteriores. No es una garantía de retrocompatibilidad para cualquier modelo, sistema operativo o stick.
+La primera idea fue usar un `venv`. Para estos sticks también necesitamos versiones específicas de las bibliotecas nativas, el plugin MYRIAD y acceso USB para cargar el firmware. Por eso dejamos Ubuntu 24.04 en la NUC y preparamos un contenedor para cada generación. El kernel y la conexión USB siguen siendo los del sistema anfitrión.
 
 ## Inicio con NCS1
 
-Ejecutar en la NUC x86_64, desde su escritorio gráfico. Se necesita conexión a Internet para descargar los archivos de Intel y los pesos originales del modelo.
+Ejecuta estos comandos desde el escritorio de la NUC x86_64. La preparación descarga el runtime de Intel y los pesos del modelo, por lo que requiere conexión a Internet.
 
 ```bash
 git clone https://github.com/GerardoDC14/intel-ncs-legacy-lab.git
@@ -41,7 +39,9 @@ cd intel-ncs-legacy-lab
 ./ncs1/live.sh both
 ```
 
-El instalador del anfitrión instala Docker, FFmpeg y herramientas USB/V4L2; añade el usuario a `plugdev` y `video` y escribe reglas udev para los IDs observados de Movidius. Los lanzadores usan `sudo docker` y ejecutan el contenedor con el UID del usuario. Las descargas de Intel se validan como archivos tar y se registra su SHA256 local; ese registro por sí mismo **no es una verificación contra un hash del fabricante**. Los pesos y el prototxt de MobileNet sí se verifican contra hashes fijados en el script.
+`setup-host.sh` instala Docker, FFmpeg y las herramientas USB/V4L2. También configura los grupos `plugdev` y `video` y las reglas udev del stick. Los lanzadores usan `sudo docker`, mientras que el proceso dentro del contenedor se ejecuta con el UID del usuario.
+
+El script de descarga comprueba que los archivos de Intel se puedan extraer y guarda su SHA256 local. No compara ese hash con uno del fabricante. Para MobileNet, los hashes de los pesos y del prototxt están fijados en el script y se comprueban antes de convertir el modelo.
 
 Modos disponibles:
 
@@ -52,27 +52,27 @@ Modos disponibles:
 ./ncs1/live.sh both --seconds 30
 ```
 
-**Q o Esc** cierra el visor. No abrir dos lanzadores a la vez: compiten por cámara y stick. `both` ejecuta un proceso por dispositivo y muestra dos paneles de una sola captura RGB. Cada panel dibuja las cajas sobre el fotograma que realmente procesó. Se descartan fotogramas pendientes para evitar una cola creciente.
+Cierra el visor con **Q o Esc**. Para comparar ambos dispositivos usa `both`; abrir dos lanzadores por separado puede causar conflictos de acceso a la cámara y al stick. `both` ejecuta un proceso por dispositivo y muestra dos paneles de una sola captura RGB. Cada panel dibuja las cajas sobre el fotograma que realmente procesó. Se descartan fotogramas pendientes para evitar una cola creciente.
 
-Se conserva el encabezado con latencia, inferencias/s, personas y antigüedad del resultado. Una sola gráfica inferior muestra los últimos 30 segundos de latencia, promedios de 5 segundos y diferencia `NCS1 − CPU`. Un valor positivo indica mayor latencia del NCS1. La tasa de inferencias/s cuenta los resultados recibidos en la ventana de 5 segundos; no se calcula como el inverso de la latencia.
+Cada panel muestra latencia, inferencias/s, número de personas y tiempo transcurrido desde el resultado. La gráfica inferior muestra los últimos 30 segundos de latencia, promedios de 5 segundos y diferencia `NCS1 − CPU`. Un valor positivo indica mayor latencia del NCS1. La tasa de inferencias/s cuenta los resultados recibidos en la ventana de 5 segundos; no se calcula como el inverso de la latencia.
 
-El visor utiliza el socket Xwayland y las credenciales de la sesión gráfica actual, sin `xhost +`. No se valida ejecución gráfica sobre SSH sin escritorio local. Detecta una cámara RGB YUYV mediante V4L2; si hay varias, elegir explícitamente:
+El visor utiliza el socket Xwayland y las credenciales de la sesión gráfica actual, sin `xhost +`. Lo probamos desde el escritorio local de la NUC. La cámara RGB YUYV se selecciona mediante V4L2; si hay varias cámaras, puedes indicar el dispositivo:
 
 ```bash
 NCS_CAMERA=/dev/video4 ./ncs1/live.sh both
 ```
 
-El número puede cambiar al reconectar. La D435i también expone profundidad e infrarrojo; esta guía utiliza solo RGB. La cámara funcionó conectada al hub tras reconectarla. Los errores USB `-71` observados anteriormente se recuperaron con reconexión física; no se estableció su causa.
+El número del dispositivo puede cambiar al reconectar la cámara. Aquí usamos únicamente RGB de la D435i. La cámara volvió a funcionar en el hub después de reconectarla; antes habíamos encontrado errores USB `-71`, cuya causa sigue pendiente.
 
 ## Modelo utilizado
 
-El primer detector, `person-detection-retail-0013`, no detectaba adecuadamente a la persona sentada y parcialmente fuera de cuadro. Se sustituyó por **MobileNet-SSD Caffe, VOC**, de [chuanqi305/MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD), convertido a IR FP16 con Model Optimizer 2020.3.355.
+El primer detector, `person-detection-retail-0013`, no detectaba adecuadamente a la persona sentada y parcialmente fuera de cuadro. Lo cambiamos por **MobileNet-SSD Caffe, VOC**, de [chuanqi305/MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD), convertido a IR FP16 con Model Optimizer 2020.3.355.
 
 Entrada BGR de 300 × 300, media 127.5 y escala 127.5 integradas en el IR; el visor entrega píxeles sin normalizarlos otra vez. La clase persona es `15` en VOC y el umbral inicial es 0.4. [Procedencia y conversión](docs/modelos.md).
 
-La ejecución del modelo en CPU y NCS1 fue validada. **La mejora para personas sentadas aún no está confirmada**: la prueba guardada de MobileNet mostró una silla vacía. La velocidad y la calidad de detección deben evaluarse por separado. Bajar el umbral puede aumentar falsos positivos.
+MobileNet ejecuta inferencia tanto en CPU como en NCS1. Falta comprobar si mejora la detección de personas sentadas: la escena estaba vacía durante la prueba de rendimiento guardada. El umbral se puede ajustar, teniendo en cuenta que un valor más bajo puede aumentar los falsos positivos.
 
-## Comparativa medida
+## Resultados
 
 ![Comparativa MobileNet-SSD en vivo](figures/mobilenet-live.svg)
 
@@ -80,9 +80,9 @@ La gráfica corresponde al promedio de los últimos 5 segundos de una sesión co
 
 ![Comparativa estática retail-0013](figures/retail-static.svg)
 
-Esta segunda prueba usa otro modelo: retail-0013, imagen fija, batch 1, inferencia síncrona, 5 calentamientos y 20 medidas por dispositivo, ejecutados por separado. Mediana CPU: **28.99 ms**; NCS1: **156.50 ms**. No incluye captura ni preprocesamiento. No debe combinarse con la sesión MobileNet para atribuir una mejora del modelo o del runtime.
+Esta segunda prueba usa otro modelo: retail-0013, imagen fija, batch 1, inferencia síncrona, 5 calentamientos y 20 medidas por dispositivo, ejecutados por separado. Mediana CPU: **28.99 ms**; NCS1: **156.50 ms**. No incluye captura ni preprocesamiento. Como cambia el modelo y el método de prueba, estos tiempos se comparan entre dispositivos dentro de cada ensayo.
 
-Las cifras ilustran diferencias de ejecución en este equipo. El valor de la práctica está en comprender el envío de un grafo a una VPU, los permisos, el firmware, la selección explícita de dispositivo y los límites de una medición. No se busca demostrar que el acelerador siempre gana.
+En este equipo la CPU tiene menor latencia. Para la clase, la comparación permite trabajar con la carga de modelos en una VPU, la selección de dispositivo y la medición de inferencia sobre hardware real.
 
 [Metodología, datos y resultados adicionales](docs/mediciones.md). Todos los gráficos pueden regenerarse con:
 
@@ -94,13 +94,13 @@ python3 -m venv .venv
 
 ## Fallo conocido del NCS1
 
-Después de varias aperturas se observó `NC_ERROR` al reinicializar el stick. El procedimiento que el usuario confirmó como recuperación es:
+Después de varias aperturas se observó `NC_ERROR` al reinicializar el stick. Lo hemos recuperado siguiendo estos pasos:
 
 1. Cerrar el visor.
 2. Desconectar y reconectar físicamente el NCS1.
 3. Abrir nuevamente el modo deseado.
 
-Es un procedimiento de recuperación observado; no se ha identificado ni corregido la causa. Se decidió no profundizar en ese fallo por ahora. El proceso MYRIAD no usa CPU como sustituto silencioso.
+La reconexión permite volver a trabajar, aunque todavía no hemos identificado la causa del error. Por ahora dejamos este procedimiento como solución temporal. La inferencia MYRIAD se solicita directamente al stick, sin fallback a CPU.
 
 ## Estado del NCS2
 
@@ -111,16 +111,16 @@ Failed to find booted device after boot
 RuntimeError: Failed to allocate graph: MYRIAD device is not opened.
 ```
 
-Se repitió con permisos habituales y acceso completo de diagnóstico, red del anfitrión y udev, libusb sin udev y OpenVINO 2022.3.1. Ninguna variante produjo inferencia NCS2. **No hay valores de latencia NCS2 que graficar.** Que `Core().available_devices` incluya `MYRIAD` confirma disponibilidad del plugin, no la ejecución del stick.
+Se repitió con permisos habituales y acceso completo de diagnóstico, red del anfitrión y udev, libusb sin udev y OpenVINO 2022.3.1. Ninguna variante produjo inferencia NCS2. Todavía no tenemos tiempos de inferencia del NCS2. Que `Core().available_devices` incluya `MYRIAD` confirma disponibilidad del plugin, no la ejecución del stick.
 
-[Proceso, hipótesis y punto de detención](docs/ncs2.md). Los archivos de `ncs2/` permiten reconstruir el entorno de diagnóstico, pero no representan una solución comprobada:
+[Detalle de las pruebas y pendientes](docs/ncs2.md). Para preparar el entorno que usamos con el NCS2:
 
 ```bash
 ./scripts/build-runtime.sh ncs2
 ./ncs2/run.sh python /work/check_ncs2.py
 ```
 
-## Organización y alcance
+## Estructura del repositorio
 
 - `ncs1/`: runtime, visor y benchmark estático.
 - `ncs2/`: entorno de diagnóstico y benchmark CPU/MYRIAD explícito.
@@ -128,5 +128,3 @@ Se repitió con permisos habituales y acceso completo de diagnóstico, red del a
 - `results/`: mediciones originales numéricas y extracto del error NCS2.
 - `docs/`: contexto, método, fuentes y limitaciones.
 - `figures/`: gráficas SVG y PNG generadas exclusivamente a partir de los datos.
-
-No se publican capturas de cámara, imágenes de detección, pesos de terceros ni archivos de autenticación. El código público del visor no guarda imágenes; escribe métricas locales al cerrar. Los pesos y runtimes se descargan de sus fuentes y conservan sus propias condiciones de licencia. El código y la documentación propios del laboratorio se distribuyen bajo MIT.

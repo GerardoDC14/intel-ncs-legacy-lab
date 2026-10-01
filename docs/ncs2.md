@@ -1,8 +1,8 @@
-# NCS2: proceso y punto de detención
+# Pruebas con NCS2
 
-## Camino seguido
+## Preparación y pruebas
 
-1. Ubuntu 24.04 recién instalado; se habilitó acceso SSH (`sudo apt install openssh-server`). Para otros equipos usar su usuario y nombre de host; no se incluye la autenticación del laboratorio.
+1. Partimos de una instalación limpia de Ubuntu 24.04 y habilitamos SSH con `sudo apt install openssh-server`.
 2. Se planteó un entorno Python aislado. Como MYRIAD necesita componentes nativos y firmware antiguos, se preparó un contenedor Ubuntu 20.04, Python 3.8 y NumPy 1.24.4.
 3. Se usó el archivo completo Intel OpenVINO 2022.3.2. El paquete PyPI ensayado no aportó el plugin MYRIAD necesario en ese entorno.
 4. Se configuraron permisos udev y paso de dispositivos USB; Docker mantiene visible `/dev/bus/usb`, incluidos dispositivos que cambian durante el boot.
@@ -18,18 +18,18 @@
 | OpenVINO 2022.3.1 separado | Persiste el fallo |
 | Reconexión física directa a USB 3 | Sin inferencia exitosa en los ensayos guardados |
 
-El lanzador público conserva el modo normal sin privilegios completos, con capacidades eliminadas y red deshabilitada. Las variantes anteriores son evidencia histórica; no se automatiza la ejecución privilegiada como configuración habitual.
+El lanzador público conserva el modo normal sin privilegios completos, con capacidades eliminadas y red deshabilitada. El acceso privilegiado se usó únicamente para comprobar si el fallo dependía de los permisos USB.
 
 ## Qué sabemos y qué falta
 
-El punto de detención es **carga de firmware / apertura del dispositivo**, antes de obtener tiempos de inferencia. [Extracto del error](../results/ncs2-failure.txt). No se atribuyen mediciones CPU al NCS2.
+El fallo aparece durante la **carga del firmware y la apertura del dispositivo**, antes de ejecutar inferencia. El mensaje está en [ncs2-failure.txt](../results/ncs2-failure.txt).
 
 No se ha determinado si la causa corresponde al stick, la conexión USB, firmware, bibliotecas o interacción con el kernel del anfitrión. Ver 480 Mb/s en el dispositivo sin arrancar no demuestra por sí solo que el puerto USB 3 esté averiado. El contenedor no reemplaza el kernel.
 
-El siguiente ensayo que permitiría aislar el problema sería probar este NCS2 en una máquina y sistema conocidos como funcionales, o probar otro NCS2 en esta NUC. Ambos están pendientes, al igual que la inferencia NCS2 y cualquier comparación energética.
+Para aislar el problema falta probar este NCS2 en una máquina y sistema conocidos como funcionales, o probar otro NCS2 en esta NUC. Estas pruebas siguen pendientes.
 
 ## Versión del runtime
 
-Las revisiones importan: [2022.3.0](https://github.com/openvinotoolkit/openvino/releases/tag/2022.3.0) anunció que los productos VPU no estaban soportados en esa revisión; [2022.3.1](https://github.com/openvinotoolkit/openvino/releases/tag/2022.3.1) anunció su soporte. El laboratorio utilizó 2022.3.2 y también ensayó 2022.3.1. No sustituirlas por 2022.3.0 suponiendo equivalencia.
+La versión concreta de OpenVINO importa: [2022.3.0](https://github.com/openvinotoolkit/openvino/releases/tag/2022.3.0) anunció que los productos VPU no estaban soportados en esa revisión; [2022.3.1](https://github.com/openvinotoolkit/openvino/releases/tag/2022.3.1) anunció su soporte. El laboratorio utilizó 2022.3.2 y también ensayó 2022.3.1. Por esa diferencia usamos las revisiones posteriores.
 
-No actualizar el runtime de este laboratorio sin verificar específicamente la disponibilidad de MYRIAD. Esta guía documenta versiones históricas, no promete soporte actual del fabricante para Ubuntu 24.04.
+Antes de cambiar la versión del runtime, revisa que incluya el plugin MYRIAD. El entorno descrito usa versiones antiguas dentro de un contenedor; Ubuntu 24.04 es el sistema anfitrión.
