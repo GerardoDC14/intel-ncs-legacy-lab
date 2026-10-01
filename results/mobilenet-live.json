@@ -1,0 +1,23 @@
+{
+  "frames_captured": 125,
+  "devices": {
+    "CPU": {
+      "inference_ms": 36.90951899989159,
+      "mean_ms_5s": 36.4182060135578,
+      "inferences_per_second_5s": 14.8,
+      "people": 0,
+      "frame": 122
+    },
+    "MYRIAD": {
+      "inference_ms": 83.20174300024519,
+      "mean_ms_5s": 83.01473491072946,
+      "inferences_per_second_5s": 11.2,
+      "people": 0,
+      "frame": 122
+    }
+  },
+  "errors": {},
+  "model": "mobilenet-ssd",
+  "measurement": "Last 5 seconds of a live dual-device session; 15 fps camera; CPU 2 threads; no warmup exclusion",
+  "date": "2026-09-30"
+}

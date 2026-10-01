@@ -1,0 +1,9 @@
+{
+  "device": "MYRIAD",
+  "openvino": "2.1.2020.3.2-3506-c35b42b1d89-releases/2020/3",
+  "iterations": 20,
+  "warmup": 5,
+  "median_ms": 156.50331899996672,
+  "p95_ms": 157.56994895034495,
+  "note": "One recorded camera frame; synchronous inference only, no accuracy assessment."
+}

@@ -1,0 +1,15 @@
+*.tgz
+*.caffemodel
+*.bin
+__pycache__/
+.venv/
+ncs1/work/models/
+ncs1/work/*.jpg
+ncs1/work/*.json
+ncs1/converter/model_optimizer/
+ncs1/converter/*.prototxt
+ncs2/work/models/
+ncs2/work/captures*/
+ncs2/work/results/
+*.log
+**/runtime-sha256.local.txt

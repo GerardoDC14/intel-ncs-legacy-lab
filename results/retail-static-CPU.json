@@ -1,0 +1,9 @@
+{
+  "device": "CPU",
+  "openvino": "2.1.2020.3.2-3506-c35b42b1d89-releases/2020/3",
+  "iterations": 20,
+  "warmup": 5,
+  "median_ms": 28.987814500169407,
+  "p95_ms": 29.135472950019903,
+  "note": "One recorded camera frame; synchronous inference only, no accuracy assessment."
+}
