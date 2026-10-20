@@ -18,7 +18,7 @@ Estas son las identificaciones de inventario. Para conectarse por SSH, consulta 
 
 - Una computadora Intel NUC con su carcasa o case.
 - Fuente de alimentación y cable de corriente de la NUC.
-- Un módulo de RAM instalado; la configuración prevista es de **8 GB**, que se comprobará en cada equipo al entregarlo.
+- Un módulo de **8 GB de RAM** instalado, confirmado en las tres NUC.
 - Una unidad SSD instalada; registrar su capacidad junto con el equipo.
 - Un **Intel Movidius Neural Compute Stick de primera generación (NCS1)** para las prácticas de inferencia.
 

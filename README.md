@@ -8,7 +8,7 @@ Este proyecto reúne la configuración y las pruebas de **Intel Movidius Neural 
 
 Se entregarán tres NUC en total, identificadas como **ciberfisicos1**, **ciberfisicos2** y **ciberfisicos3**, con una computadora asignada por estudiante y su número de serie registrado al entregar.
 
-Cada equipo incluye la NUC con su carcasa, fuente y cable de alimentación, RAM instalada —prevista de 8 GB, por comprobar en la entrega—, SSD y un **NCS1**. La contraseña inicial para las tres NUC es `1234567`; cada estudiante puede decidir si la cambia.
+Cada equipo incluye la NUC con su carcasa, fuente y cable de alimentación, 8 GB de RAM instalada, SSD y un **NCS1**. La contraseña inicial para las tres NUC es `1234567`; cada estudiante puede decidir si la cambia.
 
 Se recomienda conseguir un hub USB-C y un cable HDMI. Conecta el NCS1 directamente a un puerto USB 3.0 de la NUC y utiliza el hub, conectado al puerto USB-C, para teclado, ratón y cámara. El tamaño del stick puede impedir utilizar el puerto USB contiguo.
 
