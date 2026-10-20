@@ -2,7 +2,7 @@
 
 Este proyecto reúne la configuración y las pruebas de **Intel Movidius Neural Compute Stick (NCS1)** y **Intel Neural Compute Stick 2 (NCS2)** en una Intel NUC con Ubuntu 24.04. Lo estamos preparando para las clases de sistemas ciberfísicos: instalar el entorno, ejecutar modelos en CPU y VPU, y comparar su rendimiento.
 
-**Estado al 30 de septiembre de 2026.** NCS1 ejecuta inferencia con OpenVINO 2020.3.2 en un contenedor Ubuntu 18.04. NCS2 aparece por USB y el plugin MYRIAD está disponible en OpenVINO 2022.3.2, pero la carga del firmware falla en este equipo. Hasta ahora, la CPU ha sido más rápida que el NCS1.
+**Actualizado al 19 de octubre de 2026.** NCS1 ejecuta inferencia con OpenVINO 2020.3.2 en un contenedor Ubuntu 18.04. NCS2 aparece por USB y el plugin MYRIAD está disponible en OpenVINO 2022.3.2, pero la carga del firmware falla en este equipo. Hasta ahora, la CPU ha sido más rápida que el NCS1.
 
 ## Equipo y versiones
 
@@ -19,6 +19,8 @@ Este proyecto reúne la configuración y las pruebas de **Intel Movidius Neural 
 | Entorno NCS2 | Ubuntu 20.04, Python 3.8, OpenVINO 2022.3.2 |
 
 Inicialmente identificamos la NUC como NUC5i7RYB, pero al consultar los datos DMI encontramos NUC7i3BNK / NUC7i3BNB. Conviene revisar el modelo de cada equipo antes de preparar el entorno: `cat /sys/class/dmi/id/product_name /sys/class/dmi/id/board_name`, `lscpu` y `uname -r`.
+
+El 19 de octubre repetimos la instalación en una segunda NUC7i3BNK con Ubuntu 24.04.4 y kernel `7.0.0-38-generic`. En ese equipo comprobamos inferencia CPU/NCS1 y vídeo con una Logitech C910. [Instalación y pruebas de la segunda NUC](docs/instalacion-segunda-nuc.md).
 
 ## Por qué usar contenedores
 
@@ -107,6 +109,8 @@ MobileNet ejecuta inferencia tanto en CPU como en NCS1. Falta comprobar si mejor
 
 ## Resultados
 
+Las gráficas siguientes corresponden a la primera NUC, medidas el 30 de septiembre de 2026. Las pruebas del 19 de octubre en la segunda NUC se describen por separado en [Método y resultados](docs/mediciones.md#segunda-nuc-19-de-octubre-de-2026).
+
 ![Comparativa MobileNet-SSD en vivo](figures/mobilenet-live.svg)
 
 La gráfica corresponde al promedio de los últimos 5 segundos de una sesión con ambos dispositivos, CPU con 2 hilos y cámara a 15 fps. Se capturaron 125 fotogramas. CPU: **36.42 ms / 14.8 inferencias/s**. NCS1: **83.01 ms / 11.2 inferencias/s**. Diferencia de latencia: **+46.60 ms**, aproximadamente **2.28 veces** la latencia de CPU. No se midió consumo eléctrico ni uso global de CPU.
@@ -124,6 +128,17 @@ python3 -m venv .venv
 .venv/bin/pip install -r scripts/requirements-plots.txt
 .venv/bin/python scripts/plot_results.py
 ```
+
+## Actualizar una instalación existente
+
+Cierra el visor antes de actualizar. Desde la carpeta del repositorio:
+
+```bash
+git pull --ff-only
+./ncs1/live.sh both
+```
+
+Los cambios de recuperación afectan al lanzador y al código Python; no requieren reconstruir la imagen Docker ni convertir de nuevo el modelo. Si tienes cambios locales, revísalos antes de actualizar.
 
 ## Recuperación del NCS1
 

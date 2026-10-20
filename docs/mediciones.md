@@ -41,6 +41,25 @@ La última columna cuenta las imágenes en las que el modelo produjo una detecci
 
 `pipeline_*` en los archivos incluye resize, inferencia y filtrado de cajas, pero excluye captura, decodificación, visualización y escritura. `serial_pipeline_fps` es una tasa calculada para ese bucle, no FPS de la cámara. Estos ensayos no incluyen ejecución NCS2.
 
+## Segunda NUC, 19 de octubre de 2026
+
+Equipo NUC7i3BNK, 8 GB RAM, Ubuntu 24.04.4, kernel `7.0.0-38-generic`. Se preparó el entorno NCS1 con los scripts del repositorio y se comprobó después la captura con una Logitech C910 a 640 × 480 y 15 fps.
+
+La comprobación inicial usó un tensor constante con valor 127.5, MobileNet-SSD FP16, 3 calentamientos y 10 inferencias por dispositivo. CPU con 2 hilos y un stream; dispositivos ejecutados por separado:
+
+| Comprobación | CPU, mediana (ms) | NCS1, mediana (ms) |
+|---|---:|---:|
+| Instalación inicial | 21.13 | 84.49 |
+| Después del reset USB | 21.13 | 84.26 |
+
+En ambas comprobaciones la salida fue finita y tuvo forma `[1, 1, 100, 7]`. Estos tiempos verifican la ejecución del modelo con una entrada sintética; no se comparan directamente con la sesión de cámara de septiembre ni miden calidad de detección.
+
+Tras ajustar el cierre del visor completamos tres sesiones consecutivas de 10 segundos, con vídeo, inferencia en CPU y NCS1 y salida 0. También comprobamos que el script de reset rechaza el dispositivo cuando un proceso de inferencia lo tiene abierto.
+
+El control del reintento se comprobó además con fallos simulados: ante el primer código 75, el lanzador solicita un reset y vuelve a ejecutar el visor; si el segundo intento devuelve el mismo código, se detiene. Esta prueba verifica el flujo del lanzador, sin tocar hardware. El reset y la inferencia posterior se comprobaron por separado sobre el NCS1 real.
+
+Los nuevos ensayos no se incorporan a las gráficas de septiembre porque usan otras entradas y condiciones. La causa del fallo intermitente y la estabilidad durante sesiones prolongadas siguen pendientes. [Detalles de la recuperación](ncs1-recuperacion.md).
+
 ## Interpretación
 
 La CPU fue más rápida que el NCS1 en ambos ensayos. La comparación es válida entre dispositivos dentro de cada prueba; entre pruebas cambian el modelo, la configuración de hilos y el método. Para evaluar consumo energético, calidad de detección o rendimiento en otros equipos necesitamos mediciones adicionales.
@@ -53,4 +72,4 @@ La CPU fue más rápida que el NCS1 en ambos ensayos. La comparación es válida
 4. Para evaluar detección, obtener escenas etiquetadas con personas sentadas, de pie y ocluidas. Medir calidad aparte de velocidad.
 5. Si se estudia consumo, incorporar una medición eléctrica y energía por inferencia; no inferirla a partir de latencia.
 
-Con `ncs1/work/benchmark.py` puedes usar una imagen propia y guardar el tiempo de cada inferencia. Los resultados de este repositorio corresponden a las pruebas realizadas en la NUC. Revisamos la sintaxis de los scripts de instalación, pero todavía falta repetir todo el proceso en una segunda instalación limpia.
+Con `ncs1/work/benchmark.py` puedes usar una imagen propia y guardar el tiempo de cada inferencia. Los resultados de este repositorio corresponden a las pruebas realizadas en la NUC. El 19 de octubre repetimos la preparación en una segunda instalación de Ubuntu 24.04.4: instalación de dependencias, construcción del runtime y del conversor, conversión de MobileNet e inferencia en CPU y NCS1. El README se corrigió para instalar Git antes de clonar el repositorio.

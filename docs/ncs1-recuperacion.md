@@ -21,6 +21,22 @@ Después de un fallo, un reset dirigido al nodo USB del stick mediante `USBDEVFS
 
 Con estos cambios completamos tres sesiones consecutivas de 10 segundos con CPU y MYRIAD activos, liberación de recursos y salida 0. Como el fallo también puede desaparecer temporalmente sin cambios, estas pruebas no demuestran que su causa esté eliminada. Falta comprobar estabilidad durante sesiones de clase y después de cierres abruptos.
 
+## Comprobaciones del reintento
+
+Con el visor ejecutando inferencia, el script de reset detectó que el nodo USB estaba abierto y rechazó la operación. Así se evita reiniciar el stick mientras otro proceso lo usa.
+
+El flujo del lanzador se comprobó con un fallo simulado de inicialización: se ejecutaron dos intentos y un solo reset. Si el segundo intento también fallaba, el lanzador devolvía el error sin entrar en un bucle. Esta comprobación del control de reintentos fue simulada; el reset del NCS1 y la inferencia posterior se probaron por separado en hardware real.
+
+## Qué hace la recuperación automática
+
+1. El proceso MYRIAD falla antes de entregar su primer resultado.
+2. El visor cierra sus procesos y termina con código 75.
+3. El lanzador espera a que termine el contenedor y ejecuta el reset USB con `sudo`.
+4. Si el reset se puede solicitar, abre el visor una vez más.
+5. Si vuelve a fallar, termina con error. En ese caso sigue disponible la reconexión física.
+
+Este mecanismo atiende fallos durante la carga inicial. No recupera automáticamente errores aparecidos después de haber empezado la inferencia. Si la ventana está abierta, ciérrala con Q o Esc antes de iniciar otra sesión.
+
 ## Reset dirigido
 
 El lanzador ejecuta el script solo después de cerrar su contenedor. Para usarlo manualmente, cierra antes cualquier proceso que esté usando el stick:
