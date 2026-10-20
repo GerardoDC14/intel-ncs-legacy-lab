@@ -1,4 +1,5 @@
-import argparse, multiprocessing as mp, queue, time, json, sys
+import os
+import argparse, multiprocessing as mp, queue, time, json, sys, gc, signal
 from collections import deque
 from pathlib import Path
 import cv2
@@ -8,8 +9,10 @@ p=argparse.ArgumentParser();p.add_argument('--mode',choices=['both','cpu','myria
 devices=['CPU','MYRIAD'] if a.mode=='both' else [a.mode.upper()]
 stop=mp.Event();results={};errors={};channels={d:(mp.Queue(1),mp.Queue(2)) for d in devices}
 def worker(device, inputs, outputs):
+ exe=net=ie=None;failed=False
  try:
-  ie=IECore();net=ie.read_network('/work/models/'+a.model+'.xml','/work/models/'+a.model+'.bin');key=next(iter(net.inputs));shape=net.inputs[key].shape
+  ie=IECore()
+  net=ie.read_network('/work/models/'+a.model+'.xml','/work/models/'+a.model+'.bin');key=next(iter(net.inputs));shape=net.inputs[key].shape
   cfg={'CPU_THREADS_NUM':'2','CPU_THROUGHPUT_STREAMS':'1'} if device=='CPU' else {}
   exe=ie.load_network(net,device,config=cfg)
   print(device,'model loaded',flush=True)
@@ -25,14 +28,22 @@ def worker(device, inputs, outputs):
    try:outputs.put_nowait(message)
    except queue.Full:pass
  except Exception as e:
+  failed=True
   outputs.put(('error',str(e)))
   print(device,'ERROR:',e,flush=True)
  finally:
   outputs.cancel_join_thread();inputs.cancel_join_thread()
+  # Release the graph before the plugin so ncDeviceClose can reset the stick.
+  exe=None;net=None;gc.collect();ie=None;gc.collect()
+  print(device,'resources released',flush=True)
+  if failed:raise SystemExit(1)
 processes=[mp.Process(target=worker,args=(d,*channels[d]),daemon=True) for d in devices]
 for proc in processes:proc.start()
+def request_stop(signum, frame):stop.set()
+signal.signal(signal.SIGINT,request_stop)
+signal.signal(signal.SIGTERM,request_stop)
 cv2.namedWindow('People detection - CPU / NCS1',cv2.WINDOW_NORMAL);cv2.resizeWindow('People detection - CPU / NCS1',1280 if len(devices)==2 else 640,695)
-started=time.monotonic();fid=0
+started=time.monotonic();fid=0;myriad_startup_failed=False
 history={d:deque() for d in devices}
 colors={'CPU':(255,180,60),'MYRIAD':(70,220,110)}
 def stats(device, now):
@@ -79,6 +90,11 @@ try:
     if kind=='result':
      results[device]=value;history[device].append((value[4],value[1]))
     else:errors[device]=value
+  for device,proc in zip(devices,processes):
+   if proc.exitcode not in (None,0) and device not in results:
+    errors.setdefault(device,'Model initialization failed')
+    if device=='MYRIAD':myriad_startup_failed=True
+  if myriad_startup_failed:break
   now=time.monotonic()
   for h in history.values():
    while h and now-h[0][0]>30:h.popleft()
@@ -97,12 +113,22 @@ try:
   if a.seconds and time.monotonic()-started>=a.seconds:break
 finally:
  stop.set()
- for proc in processes:
-  proc.join(timeout=3)
-  if proc.is_alive():proc.terminate();proc.join()
+ for device,proc in zip(devices,processes):
+  proc.join(timeout=20)
+  if proc.is_alive():
+   errors[device]='Worker did not release device within 20 seconds'
+   print(device,errors[device],flush=True);proc.terminate();proc.join(timeout=3)
+   if proc.is_alive():os.kill(proc.pid,signal.SIGKILL);proc.join()
+  elif proc.exitcode:
+   errors.setdefault(device,'Worker exited with code '+str(proc.exitcode))
+   if device=='MYRIAD' and device not in results:myriad_startup_failed=True
  for inputs,outputs in channels.values():
   inputs.cancel_join_thread();inputs.close();outputs.cancel_join_thread();outputs.close()
  cv2.destroyAllWindows()
+ now=time.monotonic() if 'now' not in locals() else now
+ for device in devices:
+  if device not in results:errors.setdefault(device,'No inference result received')
  summary={d:dict(inference_ms=r[1],mean_ms_5s=stats(d,now)[0],inferences_per_second_5s=stats(d,now)[1],people=r[3],frame=r[5]) for d,r in results.items()}
  Path('/work/live-status.json').write_text(json.dumps({'frames_captured':fid,'devices':summary,'errors':errors},indent=2));print('LIVE_STATUS',json.dumps(summary),errors,flush=True)
+ if myriad_startup_failed:raise SystemExit(75)
  if errors:raise SystemExit(1)

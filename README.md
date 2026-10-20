@@ -125,15 +125,15 @@ python3 -m venv .venv
 .venv/bin/python scripts/plot_results.py
 ```
 
-## Fallo conocido del NCS1
+## Recuperación del NCS1
 
-Después de varias aperturas se observó `NC_ERROR` al reinicializar el stick. Lo hemos recuperado siguiendo estos pasos:
+En algunas aperturas el stick falla con `NC_ERROR` al cargar el modelo. Para reducir las reconexiones manuales, el visor libera explícitamente el modelo y el plugin al cerrar, y espera hasta 20 segundos antes de terminar un proceso que no responde. También impide abrir dos visores a la vez.
 
-1. Cerrar el visor.
-2. Desconectar y reconectar físicamente el NCS1.
-3. Abrir nuevamente el modo deseado.
+Si falla la inicialización de MYRIAD, el lanzador cierra el contenedor, solicita un reset USB del stick y vuelve a intentarlo **una sola vez**. Durante la recuperación la ventana se cierra y vuelve a abrirse. El script rechaza el reset si otro proceso tiene abierto el dispositivo o si hay más de una VPU conectada. Esta recuperación está preparada para un único NCS1; el identificador de dispositivo arrancado `f63b` es compartido por otros productos Movidius.
 
-La reconexión permite volver a trabajar, aunque todavía no hemos identificado la causa del error. Por ahora dejamos este procedimiento como solución temporal. La inferencia MYRIAD se solicita directamente al stick, sin fallback a CPU.
+El reset USB permitió ejecutar inferencia después de un fallo en la segunda NUC. Con el cierre actualizado también completamos tres sesiones consecutivas CPU/NCS1 sin errores. La causa del fallo intermitente sigue pendiente; un reset USB no corta necesariamente la alimentación del puerto.
+
+Si el reintento falla, cierra el visor, desconecta y reconecta el NCS1, y vuelve a abrirlo. [Pruebas y detalles de la recuperación](docs/ncs1-recuperacion.md).
 
 ## Estado del NCS2
 
