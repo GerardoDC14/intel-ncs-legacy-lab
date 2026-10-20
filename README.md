@@ -24,6 +24,37 @@ Inicialmente identificamos la NUC como NUC5i7RYB, pero al consultar los datos DM
 
 La primera idea fue usar un `venv`. Para estos sticks también necesitamos versiones específicas de las bibliotecas nativas, el plugin MYRIAD y acceso USB para cargar el firmware. Por eso dejamos Ubuntu 24.04 en la NUC y preparamos un contenedor para cada generación. El kernel y la conexión USB siguen siendo los del sistema anfitrión.
 
+## Acceso remoto por SSH (opcional)
+
+Para preparar la NUC desde otra computadora, conecta ambos equipos a la misma red. En una terminal de la NUC instala y habilita el servidor SSH:
+
+```bash
+sudo apt update
+sudo apt install openssh-server -y
+sudo systemctl enable --now ssh
+systemctl is-active ssh
+```
+
+El último comando debe mostrar `active`. Consulta el usuario, el nombre del equipo y su dirección IP:
+
+```bash
+whoami
+hostname
+hostname -I
+```
+
+Desde la otra computadora, conecta usando esos datos:
+
+```bash
+ssh usuario@nombre-del-equipo.local
+# Si el nombre .local no resuelve, usa la dirección IP de la NUC:
+ssh usuario@IP_DE_LA_NUC
+```
+
+Sustituye los valores por los de tu equipo e introduce la contraseña del usuario de la NUC. Si aparece `Connection refused`, comprueba que el servicio SSH esté activo y que la dirección corresponda a la NUC.
+
+La instalación y la preparación de los contenedores pueden hacerse por SSH. Para abrir el visor de vídeo en la pantalla conectada a la NUC, ejecuta `./ncs1/live.sh both` desde una terminal de su escritorio gráfico.
+
 ## Inicio con NCS1
 
 Ejecuta estos comandos desde el escritorio de la NUC x86_64. La preparación descarga el runtime de Intel y los pesos del modelo, por lo que requiere conexión a Internet.
