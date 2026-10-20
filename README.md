@@ -4,6 +4,18 @@ Este proyecto reúne la configuración y las pruebas de **Intel Movidius Neural 
 
 **Actualizado al 19 de octubre de 2026.** NCS1 ejecuta inferencia con OpenVINO 2020.3.2 en un contenedor Ubuntu 18.04. NCS2 aparece por USB y el plugin MYRIAD está disponible en OpenVINO 2022.3.2, pero la carga del firmware falla en este equipo. Hasta ahora, la CPU ha sido más rápida que el NCS1.
 
+## Entrega del equipo a estudiantes
+
+Se entregarán tres NUC en total, identificadas como **ciberfisicos1**, **ciberfisicos2** y **ciberfisicos3**, con una computadora asignada por estudiante y su número de serie registrado al entregar.
+
+Cada equipo incluye la NUC con su carcasa, fuente y cable de alimentación, RAM instalada —prevista de 8 GB, por comprobar en la entrega—, SSD y un **NCS1**. La contraseña inicial para las tres NUC es `1234567`; cada estudiante puede decidir si la cambia.
+
+Se recomienda conseguir un hub USB-C y un cable HDMI. Conecta el NCS1 directamente a un puerto USB 3.0 de la NUC y utiliza el hub, conectado al puerto USB-C, para teclado, ratón y cámara. El tamaño del stick puede impedir utilizar el puerto USB contiguo.
+
+Manipula con cuidado la carcasa y los conectores. El stick se calienta durante la inferencia: para las prácticas, limita su uso a **20 minutos continuos**, haz pausas para que se enfríe y utiliza ventilación adicional si está disponible.
+
+[Registro de entrega, material y recomendaciones de uso](docs/entrega-y-uso.md).
+
 ## Equipo y versiones
 
 | Componente | Equipo utilizado |
