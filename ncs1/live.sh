@@ -13,7 +13,7 @@ done < <(systemctl --user show-environment)
 camera="${NCS_CAMERA:-}"
 if [[ -z "$camera" ]]; then
  for dev in /dev/video*; do
-  if v4l2-ctl -d "$dev" --list-formats-ext 2>/dev/null | grep -q "'YUYV'"; then camera="$dev"; break; fi
+  if v4l2-ctl -d "$dev" --list-formats-ext 2>/dev/null | grep "'YUYV'" >/dev/null; then camera="$dev"; break; fi
  done
 fi
 : "${camera:?No RGB YUYV camera found}"
