@@ -60,6 +60,8 @@ La instalación y la preparación de los contenedores pueden hacerse por SSH. Pa
 Ejecuta estos comandos desde el escritorio de la NUC x86_64. La preparación descarga el runtime de Intel y los pesos del modelo, por lo que requiere conexión a Internet.
 
 ```bash
+sudo apt update
+sudo apt install git -y
 git clone https://github.com/GerardoDC14/intel-ncs-legacy-lab.git
 cd intel-ncs-legacy-lab
 ./scripts/setup-host.sh
