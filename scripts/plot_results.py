@@ -25,7 +25,7 @@ fig,axes=plt.subplots(1,2,figsize=(11,3.8));fig.subplots_adjust(left=.13,right=.
 fig.suptitle('MobileNet-SSD: CPU frente a NCS1',fontsize=17,fontweight='bold',y=.96)
 for ax,key,label in zip(axes,['mean_ms_5s','inferences_per_second_5s'],['Latencia media de inferencia (ms) ↓','Inferencias recibidas por segundo ↑']):
  bars(ax,[live[d][key] for d in ['CPU','MYRIAD']],label)
-fig.text(.13,.08,'Últimos 5 s de una sesión conjunta · CPU: 2 hilos · Cámara: 640 × 480, 15 fps\nOpenVINO 2020.3.2 · NUC i3-7100U · 30/09/2026 · Sin evaluación de exactitud',fontsize=10,color='#555555')
+fig.text(.13,.08,'Últimos 5 s de una sesión conjunta · CPU: 2 hilos · Cámara: 640 × 480, 15 fps\nOpenVINO 2020.3.2 · NUC i3-7100U · Sin evaluación de exactitud',fontsize=10,color='#555555')
 save(fig,'mobilenet-live')
 static=[json.loads((ROOT/f'results/retail-static-{d}.json').read_text()) for d in ['CPU','MYRIAD']]
 fig,ax=plt.subplots(figsize=(9,3.8));fig.subplots_adjust(left=.20,right=.96,bottom=.31,top=.75)

@@ -1,75 +1,109 @@
-# Método y resultados
+# Medir y comparar CPU y NCS1
 
-## Sesión MobileNet-SSD CPU / NCS1
+## Comparación en vivo
 
-Fuente: [mobilenet-live.json](../results/mobilenet-live.json), guardada el 30 de septiembre de 2026. Ambos dispositivos estaban activos en la misma sesión; captura 640 × 480 a 15 fps, un proceso por dispositivo, CPU con 2 hilos y un stream. Se capturaron 125 fotogramas. Los valores comparados corresponden a los últimos 5 segundos del visor, no a la media de toda la sesión.
+Abre el visor con ambos dispositivos:
 
-| Dispositivo | Media de inferencia en 5 s (ms) | Resultados recibidos/s en 5 s |
+```bash
+./ncs1/live.sh both
+```
+
+Observa estas métricas:
+
+| Métrica | Interpretación |
+|---|---|
+| Latencia, ms | Tiempo de la llamada de inferencia; menor es mejor. |
+| Inferencias/s | Resultados recibidos por segundo en una ventana de 5 segundos. |
+| Antigüedad del resultado | Tiempo desde el resultado mostrado hasta el momento actual. |
+| Diferencia NCS1 − CPU | Un valor positivo indica mayor latencia del stick. |
+
+La tasa de resultados incluye las restricciones de captura, preprocesamiento, dibujo, planificación y colas. No equivale a `1000 / latencia`. Con una cámara de 15 fps, una CPU cercana a 15 resultados/s puede estar limitada por la captura.
+
+## Benchmark sobre una imagen fija
+
+Coloca una imagen en `ncs1/work/input.jpg`. Cierra el visor antes de medir y ejecuta los dispositivos por separado:
+
+```bash
+./ncs1/run.sh python3 /work/benchmark.py --device CPU --image /work/input.jpg
+./ncs1/run.sh python3 /work/benchmark.py --device MYRIAD --image /work/input.jpg
+```
+
+El modelo predeterminado es MobileNet-SSD. El benchmark realiza 5 iteraciones de calentamiento y 20 medidas. Para cambiar esos valores:
+
+```bash
+./ncs1/run.sh python3 /work/benchmark.py --device MYRIAD --image /work/input.jpg --warmup 10 --iterations 100
+```
+
+Los resultados se guardan en `ncs1/work/benchmark-CPU.json` y `benchmark-MYRIAD.json`. Cada archivo incluye las duraciones individuales, mediana, p95, versión de OpenVINO y configuración de iteraciones.
+
+La latencia mide únicamente `infer()`. La carga del modelo, lectura de imagen, preprocesamiento y dibujo quedan fuera del tiempo registrado. La configuración CPU de este benchmark es la predeterminada del runtime; la del visor utiliza 2 hilos y un stream.
+
+## Condiciones de comparación
+
+1. Usa el mismo modelo, precisión e imagen en ambos dispositivos.
+2. Conserva la resolución y el preprocesamiento.
+3. Registra CPU, RAM, sistema operativo, kernel y versión del runtime.
+4. Indica calentamientos, iteraciones, hilos y streams cuando corresponda.
+5. Compara dispositivos dentro de un mismo procedimiento; separa inferencia, pipeline y captura.
+
+La velocidad no mide calidad de detección ni consumo energético. Para evaluar precisión o recall necesitas imágenes etiquetadas; para energía por inferencia necesitas una medición eléctrica.
+
+## Valores de referencia
+
+Los archivos de `results/` permiten contrastar los órdenes de magnitud. Sus métodos son distintos, por lo que deben interpretarse por separado.
+
+### MobileNet-SSD en vivo
+
+Fuente: [mobilenet-live.json](../results/mobilenet-live.json). NUC i3-7100U, OpenVINO 2020.3.2, CPU con 2 hilos y un stream, captura 640 × 480 a 15 fps. Ambos dispositivos activos; promedios de una ventana de 5 segundos.
+
+![Referencia MobileNet-SSD](../figures/mobilenet-live.svg)
+
+| Dispositivo | Latencia media (ms) | Resultados/s |
 |---|---:|---:|
-| CPU | 36.4182 | 14.8 |
-| NCS1 / MYRIAD | 83.0147 | 11.2 |
+| CPU | 36.42 | 14.8 |
+| NCS1 / MYRIAD | 83.01 | 11.2 |
 
-La latencia mide solo `infer()`. La tasa real también está condicionada por captura, resize, dibujo, planificación, colas y recepción de resultados. Por eso no equivale a `1000 / ms`. La CPU está cerca del límite de 15 fps de la cámara; no es una medida de su máximo rendimiento sin captura.
+El archivo conserva los agregados finales, no una serie temporal completa. La escena de referencia no permite evaluar calidad de detección.
 
-De esta sesión conservamos los promedios finales, por lo que la gráfica del repositorio muestra esos valores. La curva temporal se genera en el visor mientras está funcionando. Ambos dispositivos ejecutaron sin errores; la escena estaba vacía, así que esta prueba solo sirve para comparar rendimiento.
+### Retail-0013 sobre una imagen fija
 
-## Benchmark estático retail-0013, OpenVINO 2020.3.2
+Fuentes: [CPU](../results/retail-static-CPU.json) y [MYRIAD](../results/retail-static-MYRIAD.json). OpenVINO 2020.3.2, batch 1, inferencia síncrona, 5 calentamientos y 20 medidas. Dispositivos ejecutados por separado; configuración CPU predeterminada.
 
-Fuentes: [CPU](../results/retail-static-CPU.json), [MYRIAD](../results/retail-static-MYRIAD.json). Imagen fija, batch 1, inferencia síncrona, 5 calentamientos, 20 iteraciones; dispositivos ensayados por separado y configuración CPU por defecto. La imagen se preprocesó antes del bucle. Captura, preprocesamiento, carga del modelo y dibujo no están incluidos en la latencia.
+![Referencia retail-0013](../figures/retail-static.svg)
 
 | Dispositivo | Mediana (ms) | p95 (ms) |
 |---|---:|---:|
-| CPU | 28.9878 | 29.1355 |
-| NCS1 / MYRIAD | 156.5033 | 157.5699 |
+| CPU | 28.99 | 29.14 |
+| NCS1 / MYRIAD | 156.50 | 157.57 |
 
-Los JSON de esta prueba conservan mediana y p95. En la gráfica, el rombo marca el p95. El detector no encontró personas por encima del umbral 0.5 en la escena con una persona sentada y parcialmente fuera de cuadro.
+Estos archivos conservan los agregados. El rombo de la gráfica representa el p95, no un intervalo de confianza. La captura original no forma parte del benchmark que descargará el estudiante; utiliza una imagen propia.
 
-## Cuatro modelos CPU, OpenVINO 2022.3.2
+### Modelos CPU con OpenVINO 2022.3.2
 
-Fuente: [CSV](../results/openvino2022-cpu.csv) y JSON `*-CPU.json` con las 64 duraciones por modelo. Batch 1, una solicitud síncrona, 4 hilos CPU, un stream, 10 calentamientos, 64 medidas usando 16 imágenes repetidas cuatro veces. Umbral 0.5. Preprocesamiento BGR y etiqueta persona por modelo.
+Fuente: [CSV](../results/openvino2022-cpu.csv) y archivos `*-CPU.json`. Batch 1, una solicitud síncrona, 4 hilos CPU, un stream, 10 calentamientos y 64 medidas sobre 16 imágenes repetidas cuatro veces.
 
-![Modelos CPU con OpenVINO 2022.3.2](../figures/openvino2022-cpu.svg)
+![Modelos CPU](../figures/openvino2022-cpu.svg)
 
-| Modelo | Mediana inferencia (ms) | p95 (ms) | Imágenes con detección / 16 |
-|---|---:|---:|---:|
-| person-detection-0200 | 8.62 | 8.98 | 2 |
-| person-detection-0201 | 18.26 | 18.79 | 2 |
-| person-detection-0202 | 33.09 | 33.77 | 8 |
-| person-detection-retail-0013 | 28.44 | 29.60 | 0 |
-
-La última columna cuenta las imágenes en las que el modelo produjo una detección. Como no etiquetamos la escena ni revisamos sistemáticamente los falsos positivos y negativos, ese conteo no permite calcular precisión o recall. La persona estaba sentada y parcialmente fuera de cuadro.
-
-`pipeline_*` en los archivos incluye resize, inferencia y filtrado de cajas, pero excluye captura, decodificación, visualización y escritura. `serial_pipeline_fps` es una tasa calculada para ese bucle, no FPS de la cámara. Estos ensayos no incluyen ejecución NCS2.
-
-## Segunda NUC, 19 de octubre de 2026
-
-Equipo NUC7i3BNK, 8 GB RAM, Ubuntu 24.04.4, kernel `7.0.0-38-generic`. Se preparó el entorno NCS1 con los scripts del repositorio y se comprobó después la captura con una Logitech C910 a 640 × 480 y 15 fps.
-
-La comprobación inicial usó un tensor constante con valor 127.5, MobileNet-SSD FP16, 3 calentamientos y 10 inferencias por dispositivo. CPU con 2 hilos y un stream; dispositivos ejecutados por separado:
-
-| Comprobación | CPU, mediana (ms) | NCS1, mediana (ms) |
+| Modelo | Mediana (ms) | p95 (ms) |
 |---|---:|---:|
-| Instalación inicial | 21.13 | 84.49 |
-| Después del reset USB | 21.13 | 84.26 |
+| person-detection-0200 | 8.62 | 8.98 |
+| person-detection-0201 | 18.26 | 18.79 |
+| person-detection-0202 | 33.09 | 33.77 |
+| person-detection-retail-0013 | 28.44 | 29.60 |
 
-En ambas comprobaciones la salida fue finita y tuvo forma `[1, 1, 100, 7]`. Estos tiempos verifican la ejecución del modelo con una entrada sintética; no se comparan directamente con la sesión de cámara de septiembre ni miden calidad de detección.
+Estos valores corresponden a CPU, no al NCS2. El conteo de detecciones de los archivos no equivale a precisión o recall, porque las imágenes no tienen anotaciones de referencia.
 
-Tras ajustar el cierre del visor completamos tres sesiones consecutivas de 10 segundos, con vídeo, inferencia en CPU y NCS1 y salida 0. También comprobamos que el script de reset rechaza el dispositivo cuando un proceso de inferencia lo tiene abierto.
+En esos archivos, `pipeline_*` incluye resize, inferencia y filtrado de cajas, y excluye captura, decodificación, visualización y escritura. `serial_pipeline_fps` representa la tasa calculada de ese bucle, no FPS de cámara.
 
-El control del reintento se comprobó además con fallos simulados: ante el primer código 75, el lanzador solicita un reset y vuelve a ejecutar el visor; si el segundo intento devuelve el mismo código, se detiene. Esta prueba verifica el flujo del lanzador, sin tocar hardware. El reset y la inferencia posterior se comprobaron por separado sobre el NCS1 real.
+## Regenerar las gráficas de referencia
 
-Los nuevos ensayos no se incorporan a las gráficas de septiembre porque usan otras entradas y condiciones. La causa del fallo intermitente y la estabilidad durante sesiones prolongadas siguen pendientes. [Detalles de la recuperación](ncs1-recuperacion.md).
+Desde la carpeta del repositorio:
 
-## Interpretación
+```bash
+sudo apt install python3-venv -y
+python3 -m venv .venv
+.venv/bin/pip install -r scripts/requirements-plots.txt
+.venv/bin/python scripts/plot_results.py
+```
 
-La CPU fue más rápida que el NCS1 en ambos ensayos. La comparación es válida entre dispositivos dentro de cada prueba; entre pruebas cambian el modelo, la configuración de hilos y el método. Para evaluar consumo energético, calidad de detección o rendimiento en otros equipos necesitamos mediciones adicionales.
-
-## Cómo repetir las mediciones
-
-1. Usar el mismo modelo, precisión y datos para CPU y MYRIAD; comprobar selección explícita de dispositivo.
-2. Registrar equipo, kernel, versiones, cámara, resolución, configuración de hilos, calentamiento e iteraciones.
-3. Separar carga del modelo, inferencia, pipeline y captura. Guardar muestras individuales antes de calcular mediana y p95.
-4. Para evaluar detección, obtener escenas etiquetadas con personas sentadas, de pie y ocluidas. Medir calidad aparte de velocidad.
-5. Si se estudia consumo, incorporar una medición eléctrica y energía por inferencia; no inferirla a partir de latencia.
-
-Con `ncs1/work/benchmark.py` puedes usar una imagen propia y guardar el tiempo de cada inferencia. Los resultados de este repositorio corresponden a las pruebas realizadas en la NUC. El 19 de octubre repetimos la preparación en una segunda instalación de Ubuntu 24.04.4: instalación de dependencias, construcción del runtime y del conversor, conversión de MobileNet e inferencia en CPU y NCS1. El README se corrigió para instalar Git antes de clonar el repositorio.
+El script genera los archivos SVG y PNG en `figures/` a partir de los datos incluidos en `results/`. Para comparar nuevas mediciones, conserva su configuración y método junto con los resultados.

@@ -1,46 +1,44 @@
 # Intel NCS Legacy Lab
 
-Este proyecto reúne la configuración y las pruebas de **Intel Movidius Neural Compute Stick (NCS1)** y **Intel Neural Compute Stick 2 (NCS2)** en una Intel NUC con Ubuntu 24.04. Lo estamos preparando para las clases de sistemas ciberfísicos: instalar el entorno, ejecutar modelos en CPU y VPU, y comparar su rendimiento.
+Instalación de OpenVINO y detección de personas con **Intel Movidius Neural Compute Stick (NCS1)** en una Intel NUC con Ubuntu 24.04. La práctica permite ejecutar el mismo modelo en CPU y VPU y comparar su rendimiento.
 
-**Actualizado al 19 de octubre de 2026.** NCS1 ejecuta inferencia con OpenVINO 2020.3.2 en un contenedor Ubuntu 18.04. NCS2 aparece por USB y el plugin MYRIAD está disponible en OpenVINO 2022.3.2, pero la carga del firmware falla en este equipo. Hasta ahora, la CPU ha sido más rápida que el NCS1.
+El procedimiento principal es para **NCS1**. La configuración de NCS2 se describe aparte y tiene una limitación de carga de firmware pendiente de resolver.
 
-## Entrega del equipo a estudiantes
+## 1. Revisar el equipo
 
-Se entregarán tres NUC en total, identificadas como **ciberfisicos1**, **ciberfisicos2** y **ciberfisicos3**, con una computadora asignada por estudiante y su número de serie registrado al entregar.
+Se entregan tres NUC, identificadas como **ciberfisicos1**, **ciberfisicos2** y **ciberfisicos3**, con una computadora asignada por estudiante y su número de serie registrado en la entrega.
 
-Cada equipo incluye la NUC con su carcasa, fuente y cable de alimentación, 8 GB de RAM instalada, SSD y un **NCS1**. La contraseña inicial para las tres NUC es `1234567`; cada estudiante puede decidir si la cambia.
+Cada equipo incluye carcasa, fuente y cable de alimentación, **8 GB de RAM**, SSD y un **NCS1**. La contraseña inicial es `1234567`; cada estudiante puede cambiarla con `passwd`.
 
-Se recomienda conseguir un hub USB-C y un cable HDMI. Conecta el NCS1 directamente a un puerto USB 3.0 de la NUC y utiliza el hub, conectado al puerto USB-C, para teclado, ratón y cámara. El tamaño del stick puede impedir utilizar el puerto USB contiguo.
+Conecta el NCS1 directamente a un puerto USB 3.0 de la NUC. Utiliza un hub USB-C para teclado, ratón y cámara, y un cable HDMI para la pantalla. El tamaño del stick puede obstruir el puerto USB contiguo.
 
-Manipula con cuidado la carcasa y los conectores. El stick se calienta durante la inferencia: para las prácticas, limita su uso a **20 minutos continuos**, haz pausas para que se enfríe y utiliza ventilación adicional si está disponible.
+Manipula con cuidado la carcasa y los conectores. Para las prácticas, limita el uso del stick a **20 minutos continuos**, haz pausas para que se enfríe y utiliza ventilación adicional si está disponible.
 
-[Registro de entrega, material y recomendaciones de uso](docs/entrega-y-uso.md).
+[Material, registro de entrega y recomendaciones](docs/entrega-y-uso.md).
 
-## Equipo y versiones
+### Requisitos
 
-| Componente | Equipo utilizado |
+- NUC x86_64 con Ubuntu 24.04 y acceso a una cuenta con permisos `sudo`.
+- Conexión a Internet para descargar paquetes, runtime y modelo.
+- NCS1 conectado directamente a USB 3.0.
+- Cámara compatible con V4L2 que ofrezca YUYV a 640 × 480 y 15 fps.
+- Sesión gráfica local para abrir el visor en la pantalla de la NUC.
+
+| Componente | Configuración de referencia |
 |---|---|
-| Computadora | Intel NUC7i3BNK, placa NUC7i3BNB |
+| NUC | NUC7i3BNK / placa NUC7i3BNB |
 | CPU | Intel Core i3-7100U, 2 núcleos / 4 hilos |
-| Memoria y almacenamiento | 8 GB RAM, SSD de 128 GB |
-| Anfitrión | Ubuntu 24.04.4 LTS, kernel observado `7.0.0-34-generic` |
-| Cámara | Intel RealSense D435i, RGB por V4L2, 640 × 480 a 15 fps |
-| NCS1 | Myriad 2; USB inicial `03e7:2150`, boot observado `03e7:f63b` |
-| NCS2 | Myriad X; USB inicial `03e7:2485` |
-| Entorno NCS1 | Ubuntu 18.04, Python 3.6, OpenVINO 2020.3.2 |
-| Entorno NCS2 | Ubuntu 20.04, Python 3.8, OpenVINO 2022.3.2 |
+| RAM | 8 GB |
+| Almacenamiento | SSD; consultar la capacidad del equipo asignado |
+| Sistema anfitrión | Ubuntu 24.04 |
+| Contenedor NCS1 | Ubuntu 18.04, Python 3.6, OpenVINO 2020.3.2 |
+| Cámaras compatibles con esta configuración | Logitech C910 y RealSense D435i, canal RGB |
 
-Inicialmente identificamos la NUC como NUC5i7RYB, pero al consultar los datos DMI encontramos NUC7i3BNK / NUC7i3BNB. Conviene revisar el modelo de cada equipo antes de preparar el entorno: `cat /sys/class/dmi/id/product_name /sys/class/dmi/id/board_name`, `lscpu` y `uname -r`.
+El contenedor proporciona las bibliotecas antiguas que necesita MYRIAD sin sustituir Ubuntu ni Python del anfitrión. El kernel y la conexión USB siguen siendo los del anfitrión; un `venv` por sí solo no proporciona este entorno.
 
-El 19 de octubre repetimos la instalación en una segunda NUC7i3BNK con Ubuntu 24.04.4 y kernel `7.0.0-38-generic`. En ese equipo comprobamos inferencia CPU/NCS1 y vídeo con una Logitech C910. [Instalación y pruebas de la segunda NUC](docs/instalacion-segunda-nuc.md).
+## 2. Habilitar SSH, si vas a instalar desde otra computadora
 
-## Por qué usar contenedores
-
-La primera idea fue usar un `venv`. Para estos sticks también necesitamos versiones específicas de las bibliotecas nativas, el plugin MYRIAD y acceso USB para cargar el firmware. Por eso dejamos Ubuntu 24.04 en la NUC y preparamos un contenedor para cada generación. El kernel y la conexión USB siguen siendo los del sistema anfitrión.
-
-## Acceso remoto por SSH (opcional)
-
-Para preparar la NUC desde otra computadora, conecta ambos equipos a la misma red. En una terminal de la NUC instala y habilita el servidor SSH:
+Conecta ambos equipos a la misma red. En una terminal de la NUC:
 
 ```bash
 sudo apt update
@@ -49,7 +47,7 @@ sudo systemctl enable --now ssh
 systemctl is-active ssh
 ```
 
-El último comando debe mostrar `active`. Consulta el usuario, el nombre del equipo y su dirección IP:
+El último comando debe mostrar `active`. Consulta los datos de conexión:
 
 ```bash
 whoami
@@ -57,21 +55,19 @@ hostname
 hostname -I
 ```
 
-Desde la otra computadora, conecta usando esos datos:
+Desde la otra computadora:
 
 ```bash
 ssh usuario@nombre-del-equipo.local
-# Si el nombre .local no resuelve, usa la dirección IP de la NUC:
+# Si el nombre .local no resuelve, utiliza la IP:
 ssh usuario@IP_DE_LA_NUC
 ```
 
-Sustituye los valores por los de tu equipo e introduce la contraseña del usuario de la NUC. Si aparece `Connection refused`, comprueba que el servicio SSH esté activo y que la dirección corresponda a la NUC.
+Sustituye el usuario y el equipo por sus valores reales. Si aparece `Connection refused`, revisa el servicio SSH y la dirección IP.
 
-La instalación y la preparación de los contenedores pueden hacerse por SSH. Para abrir el visor de vídeo en la pantalla conectada a la NUC, ejecuta `./ncs1/live.sh both` desde una terminal de su escritorio gráfico.
+Puedes preparar los contenedores por SSH. El visor debe abrirse desde una terminal del escritorio gráfico de la NUC.
 
-## Inicio con NCS1
-
-Ejecuta estos comandos desde el escritorio de la NUC x86_64. La preparación descarga el runtime de Intel y los pesos del modelo, por lo que requiere conexión a Internet.
+## 3. Descargar el repositorio y preparar Ubuntu
 
 ```bash
 sudo apt update
@@ -79,18 +75,56 @@ sudo apt install git -y
 git clone https://github.com/GerardoDC14/intel-ncs-legacy-lab.git
 cd intel-ncs-legacy-lab
 ./scripts/setup-host.sh
-# Cerrar sesión y volver a entrar para aplicar los grupos USB/vídeo.
-# Reconectar el stick después de aplicar las reglas USB.
+```
+
+El script instala Docker, FFmpeg y herramientas USB/V4L2, configura los grupos `plugdev` y `video` y añade las reglas udev del stick.
+
+**Cierra sesión y vuelve a entrar** para aplicar los grupos. Desconecta y reconecta el NCS1 para aplicar los permisos USB. Después abre una terminal y vuelve a la carpeta:
+
+```bash
+cd ~/intel-ncs-legacy-lab
+```
+
+## 4. Construir el entorno y preparar el modelo
+
+```bash
 ./scripts/build-runtime.sh ncs1
 ./scripts/prepare-mobilenet.sh
+```
+
+El primer comando construye el runtime OpenVINO 2020.3.2. El segundo descarga MobileNet-SSD, comprueba sus hashes y lo convierte a IR FP16 en un contenedor de conversión separado. Espera a que ambos terminen sin errores antes de continuar.
+
+El modelo queda en `ncs1/work/models/mobilenet-ssd.xml` y `.bin`. [Modelo, preprocesamiento y alternativas](docs/modelos.md).
+
+## 5. Comprobar el stick y la cámara
+
+```bash
+lsusb
+v4l2-ctl --list-devices
+```
+
+El NCS1 aparece inicialmente como `03e7:2150`; después de cargar firmware puede aparecer como `03e7:f63b`. Ese último identificador también se utiliza en otros dispositivos Movidius.
+
+Consulta los formatos del canal de vídeo que corresponda a tu cámara:
+
+```bash
+v4l2-ctl -d /dev/video0 --list-formats-ext
+```
+
+Debe ofrecer YUYV a 640 × 480 y 15 fps. En una RealSense selecciona el canal RGB, no profundidad ni infrarrojo. El número `/dev/videoN` puede cambiar al reconectar.
+
+## 6. Abrir el visor
+
+Desde una terminal del escritorio de la NUC:
+
+```bash
+cd ~/intel-ncs-legacy-lab
 ./ncs1/live.sh both
 ```
 
-`setup-host.sh` instala Docker, FFmpeg y las herramientas USB/V4L2. También configura los grupos `plugdev` y `video` y las reglas udev del stick. Los lanzadores usan `sudo docker`, mientras que el proceso dentro del contenedor se ejecuta con el UID del usuario.
+Introduce la contraseña cuando `sudo` la solicite. Los dos paneles deben mostrar vídeo y resultados de CPU y MYRIAD/NCS1. Cierra con **Q o Esc**.
 
-El script de descarga comprueba que los archivos de Intel se puedan extraer y guarda su SHA256 local. No compara ese hash con uno del fabricante. Para MobileNet, los hashes de los pesos y del prototxt están fijados en el script y se comprueban antes de convertir el modelo.
-
-Modos disponibles:
+Otros modos:
 
 ```bash
 ./ncs1/live.sh cpu
@@ -99,92 +133,58 @@ Modos disponibles:
 ./ncs1/live.sh both --seconds 30
 ```
 
-Cierra el visor con **Q o Esc**. Para comparar ambos dispositivos usa `both`; abrir dos lanzadores por separado puede causar conflictos de acceso a la cámara y al stick. `both` ejecuta un proceso por dispositivo y muestra dos paneles de una sola captura RGB. Cada panel dibuja las cajas sobre el fotograma que realmente procesó. Se descartan fotogramas pendientes para evitar una cola creciente.
-
-Cada panel muestra latencia, inferencias/s, número de personas y tiempo transcurrido desde el resultado. La gráfica inferior muestra los últimos 30 segundos de latencia, promedios de 5 segundos y diferencia `NCS1 − CPU`. Un valor positivo indica mayor latencia del NCS1. La tasa de inferencias/s cuenta los resultados recibidos en la ventana de 5 segundos; no se calcula como el inverso de la latencia.
-
-El visor utiliza el socket Xwayland y las credenciales de la sesión gráfica actual, sin `xhost +`. Lo probamos desde el escritorio local de la NUC. La cámara RGB YUYV se selecciona mediante V4L2; si hay varias cámaras, puedes indicar el dispositivo:
+Para seleccionar la cámara manualmente:
 
 ```bash
-NCS_CAMERA=/dev/video4 ./ncs1/live.sh both
+NCS_CAMERA=/dev/video0 ./ncs1/live.sh both
 ```
 
-El número del dispositivo puede cambiar al reconectar la cámara. Aquí usamos únicamente RGB de la D435i. La cámara volvió a funcionar en el hub después de reconectarla; antes habíamos encontrado errores USB `-71`, cuya causa sigue pendiente.
+Abre un solo visor. El modo `both` ejecuta un proceso por dispositivo a partir de una misma captura RGB; cada panel dibuja las cajas sobre el fotograma que procesó. Se descartan fotogramas pendientes para evitar acumular retraso.
 
-## Modelo utilizado
+El encabezado muestra latencia, inferencias/s, personas y antigüedad del resultado. La gráfica muestra los últimos 30 segundos de latencia, promedios de 5 segundos y diferencia `NCS1 − CPU`. Un valor positivo indica mayor latencia del stick. Las inferencias/s cuentan resultados recibidos; no son el inverso de la latencia.
 
-El primer detector, `person-detection-retail-0013`, no detectaba adecuadamente a la persona sentada y parcialmente fuera de cuadro. Lo cambiamos por **MobileNet-SSD Caffe, VOC**, de [chuanqi305/MobileNet-SSD](https://github.com/chuanqi305/MobileNet-SSD), convertido a IR FP16 con Model Optimizer 2020.3.355.
+El umbral predeterminado es 0.4. Puedes bajarlo para admitir detecciones con menor confianza, teniendo en cuenta que pueden aumentar los falsos positivos. La detección de personas sentadas u ocluidas debe evaluarse por separado del rendimiento.
 
-Entrada BGR de 300 × 300, media 127.5 y escala 127.5 integradas en el IR; el visor entrega píxeles sin normalizarlos otra vez. La clase persona es `15` en VOC y el umbral inicial es 0.4. [Procedencia y conversión](docs/modelos.md).
+## 7. Resolver problemas de inicio
 
-MobileNet ejecuta inferencia tanto en CPU como en NCS1. Falta comprobar si mejora la detección de personas sentadas: la escena estaba vacía durante la prueba de rendimiento guardada. El umbral se puede ajustar, teniendo en cuenta que un valor más bajo puede aumentar los falsos positivos.
+| Problema | Qué hacer |
+|---|---|
+| `No RGB YUYV camera found` | Revisa conexión y formatos con V4L2; selecciona el canal RGB con `NCS_CAMERA`. |
+| Fallo de acceso USB | Revisa las reglas de `setup-host.sh`, vuelve a iniciar sesión y reconecta el stick. |
+| `NC_ERROR` al cargar MYRIAD | Espera el reset USB y el único reintento automático del lanzador. |
+| El reintento vuelve a fallar | Cierra el visor, desconecta y reconecta físicamente el NCS1 y vuelve a abrirlo. |
+| Otro visor ya está abierto | Ciérralo con Q o Esc antes de iniciar uno nuevo. |
+| No aparece una ventana gráfica | Ejecuta el visor desde el escritorio local de la NUC. |
 
-## Resultados
+La recuperación automática actúa sobre fallos de carga inicial, después de cerrar el contenedor. No corta necesariamente la alimentación USB ni garantiza recuperar todos los bloqueos. [Procedimiento de recuperación](docs/ncs1-recuperacion.md).
 
-Las gráficas siguientes corresponden a la primera NUC, medidas el 30 de septiembre de 2026. Las pruebas del 19 de octubre en la segunda NUC se describen por separado en [Método y resultados](docs/mediciones.md#segunda-nuc-19-de-octubre-de-2026).
+## 8. Comparar CPU y NCS1
 
-![Comparativa MobileNet-SSD en vivo](figures/mobilenet-live.svg)
+Usa el modo `both` para observar el comportamiento en vivo. Para medir inferencia sobre una imagen fija, sigue el [procedimiento de medición](docs/mediciones.md).
 
-La gráfica corresponde al promedio de los últimos 5 segundos de una sesión con ambos dispositivos, CPU con 2 hilos y cámara a 15 fps. Se capturaron 125 fotogramas. CPU: **36.42 ms / 14.8 inferencias/s**. NCS1: **83.01 ms / 11.2 inferencias/s**. Diferencia de latencia: **+46.60 ms**, aproximadamente **2.28 veces** la latencia de CPU. No se midió consumo eléctrico ni uso global de CPU.
+![Referencia MobileNet-SSD](figures/mobilenet-live.svg)
 
-![Comparativa estática retail-0013](figures/retail-static.svg)
+Esta referencia usa MobileNet-SSD, CPU con 2 hilos y cámara de 15 fps. Los valores son promedios de una ventana de 5 segundos: CPU **36.42 ms / 14.8 inferencias/s** y NCS1 **83.01 ms / 11.2 inferencias/s**. Son una referencia del equipo y la configuración indicados, no valores que deban reproducirse exactamente. No incluyen mediciones energéticas ni una evaluación de exactitud.
 
-Esta segunda prueba usa otro modelo: retail-0013, imagen fija, batch 1, inferencia síncrona, 5 calentamientos y 20 medidas por dispositivo, ejecutados por separado. Mediana CPU: **28.99 ms**; NCS1: **156.50 ms**. No incluye captura ni preprocesamiento. Como cambia el modelo y el método de prueba, estos tiempos se comparan entre dispositivos dentro de cada ensayo.
+## Actualizar la instalación
 
-En este equipo la CPU tiene menor latencia. Para la clase, la comparación permite trabajar con la carga de modelos en una VPU, la selección de dispositivo y la medición de inferencia sobre hardware real.
-
-[Metodología, datos y resultados adicionales](docs/mediciones.md). Todos los gráficos pueden regenerarse con:
-
-```bash
-python3 -m venv .venv
-.venv/bin/pip install -r scripts/requirements-plots.txt
-.venv/bin/python scripts/plot_results.py
-```
-
-## Actualizar una instalación existente
-
-Cierra el visor antes de actualizar. Desde la carpeta del repositorio:
+Cierra el visor y ejecuta desde la carpeta del repositorio:
 
 ```bash
 git pull --ff-only
 ./ncs1/live.sh both
 ```
 
-Los cambios de recuperación afectan al lanzador y al código Python; no requieren reconstruir la imagen Docker ni convertir de nuevo el modelo. Si tienes cambios locales, revísalos antes de actualizar.
+Los cambios del lanzador y del visor Python no requieren reconstruir Docker ni convertir de nuevo el modelo. Revisa cualquier cambio local antes de actualizar.
 
-## Recuperación del NCS1
+## NCS2
 
-En algunas aperturas el stick falla con `NC_ERROR` al cargar el modelo. Para reducir las reconexiones manuales, el visor libera explícitamente el modelo y el plugin al cerrar, y espera hasta 20 segundos antes de terminar un proceso que no responde. También impide abrir dos visores a la vez.
+El entorno NCS2 usa Ubuntu 20.04, Python 3.8 y OpenVINO 2022.3.2. Su carga de firmware tiene un fallo pendiente de resolver; utiliza NCS1 para completar la práctica. [Configuración y diagnóstico del NCS2](docs/ncs2.md).
 
-Si falla la inicialización de MYRIAD, el lanzador cierra el contenedor, solicita un reset USB del stick y vuelve a intentarlo **una sola vez**. Durante la recuperación la ventana se cierra y vuelve a abrirse. El script rechaza el reset si otro proceso tiene abierto el dispositivo o si hay más de una VPU conectada. Esta recuperación está preparada para un único NCS1; el identificador de dispositivo arrancado `f63b` es compartido por otros productos Movidius.
-
-El reset USB permitió ejecutar inferencia después de un fallo en la segunda NUC. Con el cierre actualizado también completamos tres sesiones consecutivas CPU/NCS1 sin errores. La causa del fallo intermitente sigue pendiente; un reset USB no corta necesariamente la alimentación del puerto.
-
-Si el reintento falla, cierra el visor, desconecta y reconecta el NCS1, y vuelve a abrirlo. [Pruebas y detalles de la recuperación](docs/ncs1-recuperacion.md).
-
-## Estado del NCS2
-
-Se preparó Ubuntu 20.04 / Python 3.8 / OpenVINO 2022.3.2 y se verificó inferencia CPU. El NCS2 se enumera por USB, pero al compilar para MYRIAD aparece:
-
-```text
-Failed to find booted device after boot
-RuntimeError: Failed to allocate graph: MYRIAD device is not opened.
-```
-
-Se repitió con permisos habituales y acceso completo de diagnóstico, red del anfitrión y udev, libusb sin udev y OpenVINO 2022.3.1. Ninguna variante produjo inferencia NCS2. Todavía no tenemos tiempos de inferencia del NCS2. Que `Core().available_devices` incluya `MYRIAD` confirma disponibilidad del plugin, no la ejecución del stick.
-
-[Detalle de las pruebas y pendientes](docs/ncs2.md). Para preparar el entorno que usamos con el NCS2:
-
-```bash
-./scripts/build-runtime.sh ncs2
-./ncs2/run.sh python /work/check_ncs2.py
-```
-
-## Estructura del repositorio
+## Contenido
 
 - `ncs1/`: runtime, visor y benchmark estático.
-- `ncs2/`: entorno de diagnóstico y benchmark CPU/MYRIAD explícito.
-- `scripts/`: preparación del anfitrión, descarga/conversión y gráficos.
-- `results/`: mediciones originales numéricas y extracto del error NCS2.
-- `docs/`: contexto, método, fuentes y limitaciones.
-- `figures/`: gráficas SVG y PNG generadas exclusivamente a partir de los datos.
+- `ncs2/`: entorno de diagnóstico.
+- `scripts/`: instalación, conversión, recuperación y generación de gráficas.
+- `docs/`: instrucciones de entrega, modelos, medición y solución de problemas.
+- `results/` y `figures/`: datos y gráficas de referencia.

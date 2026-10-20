@@ -330,7 +330,7 @@ L 768.24 191.52
   </g>
   <g id="text_22">
    <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(102.96 240.034187)">Últimos 5 s de una sesión conjunta · CPU: 2 hilos · Cámara: 640 × 480, 15 fps</text>
-   <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(102.96 251.712)">OpenVINO 2020.3.2 · NUC i3-7100U · 30/09/2026 · Sin evaluación de exactitud</text>
+   <text style="font-size: 10px; font-family: 'DejaVu Sans'; fill: #555555" transform="translate(102.96 251.712)">OpenVINO 2020.3.2 · NUC i3-7100U · Sin evaluación de exactitud</text>
   </g>
  </g>
  <defs>
